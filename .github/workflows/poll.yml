@@ -1,0 +1,31 @@
+name: legaleader-poll
+
+# GitHub Actions không cho lịch dưới 5 phút → chạy mỗi 5 phút, mỗi lần gọi
+# 2 job (realtime + email-approve) trên Vercel.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: legaleader-poll
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Poll realtime + email-approve
+        env:
+          RUN_BASE: ${{ secrets.RUN_BASE }}
+          CRON_TOKEN: ${{ secrets.CRON_TOKEN }}
+        run: |
+          if [ -z "$RUN_BASE" ] || [ -z "$CRON_TOKEN" ]; then
+            echo "Thieu secret RUN_BASE hoac CRON_TOKEN"; exit 1
+          fi
+          for job in realtime email-approve; do
+            printf '%s  %-14s -> ' "$(date -u +%H:%M:%S)" "$job"
+            curl -fsS --max-time 90 "$RUN_BASE?job=$job&token=$CRON_TOKEN" || echo "loi (job=$job)"
+            echo
+          done

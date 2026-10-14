@@ -1,0 +1,25 @@
+name: keepalive
+
+# GitHub tự tắt workflow theo lịch sau 60 ngày không hoạt động repo.
+# Commit nhỏ mỗi tháng để giữ poll.yml luôn bật.
+on:
+  schedule:
+    - cron: '0 3 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  touch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Commit heartbeat
+        run: |
+          date -u > .github/last-keepalive.txt
+          git config user.name "legaleader-cron"
+          git config user.email "legaleader-cron@users.noreply.github.com"
+          git add .github/last-keepalive.txt
+          git commit -m "keepalive $(date -u +%F)" || echo "khong co thay doi"
+          git push
